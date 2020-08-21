@@ -11,27 +11,12 @@ pub const BOARD_WIDTH: u32 = 50;
 pub const BOARD_HEIGHT: u32 = 50;
 pub const TOTAL_NUM_PIXELS: u32 = BOARD_WIDTH * BOARD_HEIGHT;
 
-#[derive(BorshDeserialize, BorshSerialize, Copy, Clone)]
-pub struct Pixel {
-    pub color: u32,
-    pub owner_id: AccountIndex,
-}
-
-impl Default for Pixel {
-    fn default() -> Self {
-        Self {
-            color: 0xffffff,
-            owner_id: 0,
-        }
-    }
-}
-
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct PixelLine(pub Vec<Pixel>);
+pub struct PixelLine(pub Vec<u32>);
 
 impl Default for PixelLine {
     fn default() -> Self {
-        Self(vec![Pixel::default(); BOARD_WIDTH as usize])
+        Self(vec![0xffffff; BOARD_WIDTH as usize])
     }
 }
 
@@ -74,30 +59,19 @@ impl PixelBoard {
         self.lines.get(u64::from(index)).unwrap()
     }
 
-    /// Returns the list of the old owner IDs for the replaced pixels
-    pub fn set_pixels(
-        &mut self,
-        new_owner_id: u32,
-        pixels: &[SetPixelRequest],
-    ) -> HashMap<AccountIndex, u32> {
+    /// Replaces given pixels
+    pub fn set_pixels(&mut self, pixels: &[SetPixelRequest]) {
         let mut lines = HashMap::new();
-        let mut old_owners = HashMap::new();
         for request in pixels {
             request.assert_valid();
             let line = lines
                 .entry(request.y)
                 .or_insert_with(|| self.lines.get(u64::from(request.y)).unwrap());
-            let old_owner = line.0[request.x as usize].owner_id;
-            line.0[request.x as usize] = Pixel {
-                owner_id: new_owner_id,
-                color: request.color,
-            };
-            *old_owners.entry(old_owner).or_default() += 1;
+            line.0[request.x as usize] = request.color
         }
         for (i, line) in lines {
             self.save_line(i, &line);
         }
-        old_owners
     }
 
     fn save_line(&mut self, index: u32, line: &PixelLine) {
