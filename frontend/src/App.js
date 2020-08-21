@@ -108,7 +108,7 @@ class App extends React.Component {
       }
     });
 
-    canvas.addEventListener('click', async (e) => {
+    canvas.addEventListener('mousedown', async (e) => {
       if (this.state.selectedCell !== null) {
         if (this.state.pickingColor) {
           this.pickColor(this.state.selectedCell);
